@@ -1,10 +1,6 @@
 import ServiceAppointment from "../models/serviceAppointment.js";
 import Service from "../models/Service.js";
-import Stripe from "stripe";
 import { getAuth } from "@clerk/express";
-
-const stripeKey = process.env.STRIPE_SECRET_KEY || null;
-const stripe = stripeKey ? new Stripe(stripeKey, {apiVersion: "2022-11-15"}) : null;
 
 //Helper functions
 //this fn will return a finite number
@@ -36,14 +32,6 @@ function parseTimeString(timeStr) {
   if (hh > 12) return { hour: hh - 12, minute: mm, ampm: "PM" };
   return { hour: hh, minute: mm, ampm: "AM" };
 }
-
-//this fn will create the frontend url
-const buildFrontendBase = (req) => {
-  const env = process.env.FRONTEND_URL;
-  if (env) return env.replace(/\/$/, "");
-  const origin = req.get("origin") || req.get("referer") || null;
-  return origin ? origin.replace(/\/$/, "") : null;
-};
 
 //this fn will get the user from clerk and return the user details
 function resolveClerkUserId(req) {
@@ -84,11 +72,9 @@ const {
       hour,
       minute,
       ampm,
-      paymentMethod = "Online",
       amount: amountFromBody,
       fees: feesFromBody,
       email,
-      meta = {},
       notes = "",
       serviceImageUrl: serviceImageUrlFromBody,
       serviceImagePublicId: serviceImagePublicIdFromBody,
@@ -161,148 +147,13 @@ const {
       notes: notes || "",
     };
 
-    // Free appointment
-    if (numericAmount === 0) {
-      const created = await ServiceAppointment.create({ ...base, status: "Pending", payment: { method: "Cash", status: "Pending", amount: 0, paidAt: new Date() } });
-      return res.status(201).json({ success: true, appointment: created });
-    }
-
-    // Cash booking
-    if (paymentMethod === "Cash") {
-      const created = await ServiceAppointment.create({ ...base, status: "Pending", payment: { method: "Cash", status: "Pending", amount: numericAmount, meta } });
-      return res.status(201).json({ success: true, appointment: created, checkoutUrl: null });
-    }
-
-    // Online booking (Stripe)
-    if (!stripe) return res.status(500).json({ success: false, message: "Stripe not configured on server" });
-    const frontendBase = buildFrontendBase(req);
-    if (!frontendBase) return res.status(500).json({ success: false, message: "Frontend base URL not available. Set FRONTEND_URL or provide Origin header." });
-
-    const successUrl = `${frontendBase}/service-appointment/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${frontendBase}/service-appointment/cancel`;
-
-    let session;
-    try {
-      session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        mode: "payment",
-        customer_email: email ? String(email) : undefined,
-        line_items: [
-          {
-            price_data: {
-              currency: "inr",
-              product_data: {
-                name: `Service: ${String(resolvedServiceName).slice(0, 60)}`,
-                description: `Appointment on ${base.date} ${base.hour}:${String(base.minute).padStart(2, "0")} ${base.ampm}`,
-              },
-              unit_amount: Math.round(numericAmount * 100),
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        metadata: {
-          serviceId: String(serviceId),
-          serviceName: String(resolvedServiceName).slice(0, 200),
-          patientName: base.patientName,
-          mobile: base.mobile,
-          clerkUserId: base.createdBy || "",
-          serviceImageUrl: finalServiceImageUrl ? String(finalServiceImageUrl).slice(0, 200) : "",
-        },
-      });
-    } catch (stripeErr) {
-      console.error("Stripe create session error:", stripeErr);
-      const message = stripeErr?.raw?.message || stripeErr?.message || "Stripe error";
-      return res.status(502).json({ success: false, message: `Payment provider error: ${message}` });
-    }
-
-    try {
-      const created = await ServiceAppointment.create({
-        ...base,
-        status: "Confirmed",
-        payment: { method: "Online", status: "Pending", amount: numericAmount, sessionId: session.id || "" },
-      });
-      return res.status(201).json({ success: true, appointment: created, checkoutUrl: session.url || null });
-    } catch (dbErr) {
-      console.error("DB error saving service appointment after stripe session:", dbErr);
-      return res.status(500).json({ success: false, message: "Failed to create appointment record" });
-    }
+    const created = await ServiceAppointment.create({ ...base, status: "Pending" });
+    return res.status(201).json({ success: true, appointment: created });
   } catch (err) {
     console.error("createServiceAppointment unexpected:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-//to confirm the service payment
-export const confirmServicePayment = async(req, res) => {
-try{
-const { session_id } = req.query;
-if(!session_id) return res.status(400).json({
-success: false,
-message: "Session Id is req"
-});
-if(!stripe) return res.status(500).json({
-success: false,
-message: "Stripe is not configured"
-});
-
-let session;
-try {session = await stripe.checkout.sessions.retrieve(session_id);}
-catch(err){
-console.error("Stripe Err:", err);
-return res.status(404).json({
-success: false,
-message: "Stripe session not found"
-});
-}
-
-if(!session) return res.status(404).json({
-success: false,
-message: "Invalid session"
-});
-if(session.payment_status !== "paid") return res.status(400).json({
-success: false,
-message: "Payment not completed"
-});
-
-//confirmServicePayment
-    let appt = await ServiceAppointment.findOneAndUpdate(
-      { "payment.sessionId": session_id },
-      {
-        $set: {
-          "payment.status": "Confirmed",
-          "payment.providerId": session.payment_intent || "",
-          "payment.paidAt": new Date(),
-          status: "Confirmed",
-        },
-      },
-      { new: true }
-    );
-
-    if (!appt && session.metadata?.appointmentId) {
-      appt = await ServiceAppointment.findOneAndUpdate(
-        { _id: session.metadata.appointmentId },
-        {
-          $set: {
-            "payment.status": "Confirmed",
-            "payment.providerId": session.payment_intent || "",
-            "payment.paidAt": new Date(),
-            status: "Confirmed",
-          },
-        },
-        { new: true }
-      );
-    }
-
-    if (!appt) return res.status(404).json({ success: false, message: "Service appointment not found" });
-return res.json({ success: true, appointment: appt });
-}
-catch(err){
-console.error("createServiceAppointment err:", err);
-return res.status(500).json({ success: false, message: "Server error" });
-}
-}
 
 //to getServiceAppointment
 export const getServiceAppointments = async(req, res) => {
@@ -370,8 +221,6 @@ const updates = {};
 
  if (body.status !== undefined) updates.status = body.status;
     if (body.notes !== undefined) updates.notes = body.notes;
-    if (body.payment !== undefined) updates.payment = body.payment;
-    if (body["payment.status"] !== undefined) updates["payment.status"] = body["payment.status"];
 
     if (body.rescheduledTo) {
       const { date, time } = body.rescheduledTo || {};
@@ -393,16 +242,7 @@ const updates = {};
       if (!body.status) updates.status = "Rescheduled";
     }
 
-    if (updates.payment) {
-      const method = updates.payment.method || updates.payment?.method;
-      if (method && String(method).toLowerCase() === "online") updates.status = updates.status || "Confirmed";
-      if (updates.payment.status && updates.payment.status === "Confirmed") {
-        updates.status = "Confirmed";
-        if (updates.payment.paidAt === undefined) updates.payment.paidAt = new Date();
-      }
-    }
-
-const updated = await ServiceAppointment.findOneAndUpdate(id, { $set: updates}, {
+const updated = await ServiceAppointment.findByIdAndUpdate(id, { $set: updates}, {
    new: true, runValidators: true 
 });
 
@@ -426,7 +266,6 @@ const appt = await ServiceAppointment.findById(id);
 if(!appt) return res.status(404).json({ success: false, message: "Not found" });
 if(appt.status === "Completed") return res.status(400).json({ success: false, message: "Can't cancel a complete request" });
 appt.status = "Canceled";
-if(appt.payment) appt.payment.status = appt.payment.status === "Confirmed" ? "Canceled" : "Pending";
 await appt.save();
 return res.json({ success: true, data: appt});
 }
@@ -470,7 +309,7 @@ return res.status(500).json({ success: false, message: "Server error" });
 //to get service appoitnment by pateint
 export const getServiceAppointmentsByPatient = async(req, res) => {
 try{
-const clerkUserId = resolveClerkUserId(res);
+const clerkUserId = resolveClerkUserId(req);
 const { createdBy, mobile } = req.query;
 const resolvedCreatedBy = createdBy || clerkUserId || null;
 if(!resolvedCreatedBy && !mobile) return res.json({
@@ -497,7 +336,6 @@ return res.status(500).json({ success: false, message: "Server error" });
 
 export default {
 createServiceAppointment,
-confirmServicePayment,
 getServiceAppointments,
 getServiceAppointmentById,
 updateServiceAppointment,

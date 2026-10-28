@@ -28,8 +28,6 @@ export default function ServiceDetail() {
   const [gender, setGender] = useState("");
 
   const [email, setEmail] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Online");
-
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -313,12 +311,7 @@ export default function ServiceDetail() {
         time: selectedTime,
         fee: service?.price ?? 0,
         fees: service?.price ?? 0,
-        paymentMethod: paymentMethod === "Cash" ? "Cash" : "Online",
         email: email || undefined,
-        meta: {
-          client: "frontend",
-          serviceName: service?.name,
-        },
       };
 
       const headers = {
@@ -342,18 +335,25 @@ export default function ServiceDetail() {
         body: JSON.stringify(payload),
       });
 
+      const contentType = res.headers.get("content-type") || "";
       const text = await res.text();
+      const isJson = contentType.includes("application/json");
       let json = null;
-      try {
-        json = JSON.parse(text);
-      } catch {
+      if (isJson) {
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = { rawText: text };
+        }
+      } else {
         json = { rawText: text };
       }
 
-      if (!res.ok) {
+      const isSuccess = res.ok && isJson && json != null && json.success !== false;
+      if (!isSuccess) {
         const msg =
           (json && (json.message || json.error || json.rawText)) ||
-          `Server returned ${res.status}`;
+          `Booking failed with status ${res.status}`;
         if (json && json.errors && typeof json.errors === "object") {
           const ve = Array.isArray(json.errors)
             ? json.errors.join(", ")
@@ -366,18 +366,11 @@ export default function ServiceDetail() {
         return;
       }
 
-      const { appointment, checkoutUrl } = json || {};
-
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
-        return;
-      }
-
       toast.success(
         "Booking created successfully. Redirecting to appointments...",
       );
       setTimeout(() => {
-        navigate("/appointments?payment_status=Paid", { replace: true });
+        navigate("/appointments", { replace: true });
       }, 700);
 
       setCustomerName("");
@@ -511,43 +504,6 @@ export default function ServiceDetail() {
               />
             </div>
 
-            <div className={serviceDetailStyles.dateSection}>
-              <label className={serviceDetailStyles.paymentLabel}>
-                Payment Method
-              </label>
-              <div className={serviceDetailStyles.paymentOptions}>
-                <label
-                  className={serviceDetailStyles.paymentOption(
-                    paymentMethod === "Cash",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="Cash"
-                    checked={paymentMethod === "Cash"}
-                    onChange={() => setPaymentMethod("Cash")}
-                    className={serviceDetailStyles.paymentInput}
-                  />
-                  Cash
-                </label>
-                <label
-                  className={serviceDetailStyles.paymentOption(
-                    paymentMethod === "Online",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="Online"
-                    checked={paymentMethod === "Online"}
-                    onChange={() => setPaymentMethod("Online")}
-                    className={serviceDetailStyles.paymentInput}
-                  />
-                  Online
-                </label>
-              </div>
-            </div>
           </div>
 
           {/* DATE */}
@@ -682,9 +638,6 @@ export default function ServiceDetail() {
               </p>
               <p>
                 <b>Time:</b> {selectedTime || "Not selected"}
-              </p>
-              <p>
-                <b>Payment:</b> {paymentMethod}
               </p>
               <p>
                 <b>Price:</b> ₹{service.price}

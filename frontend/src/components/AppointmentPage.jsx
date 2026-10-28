@@ -11,8 +11,6 @@ import {
   CheckCircle,
   Bell,
   XCircle,
-  CreditCard,
-  Wallet,
 } from "lucide-react";
 
 import { useAuth, useUser } from "@clerk/clerk-react";
@@ -109,18 +107,6 @@ function computeStatus(item) {
   return item.confirmed ? "Confirmed" : "Pending";
 }
 
-const PaymentBadge = ({ payment }) => {
-  return payment === "Online" ? (
-    <span className={badgeStyles.paymentBadge.online}>
-      <CreditCard className={iconSize.small} /> Online
-    </span>
-  ) : (
-    <span className={badgeStyles.paymentBadge.cash}>
-      <Wallet className={iconSize.small} /> Cash
-    </span>
-  );
-};
-
 const StatusBadge = ({ itemStatus }) => {
   if (itemStatus === "Completed")
     return (
@@ -182,23 +168,24 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
     let token = null;
     try {
       token = await getToken();
-      console.log(
-        "Clerk token (frontend):",
-        token ? `${token.slice(0, 20)}...` : null,
-      );
     } catch (err) {
       console.error("Failed to get Clerk token (frontend):", err);
     }
 
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    console.log("Outgoing headers for /api/appointments/me:", headers);
-
+    const headers = token
+      ? { Authorization: `Bearer ${token}`, Accept: "application/json" }
+      : { Accept: "application/json" };
     try {
-      const resp = await API.get("/api/appointments/me", { headers });
-      console.log("Response from /api/appointments/me:", resp?.data);
+      const resp = await API.get("/api/appointments/me", { headers, validateStatus: null });
+      console.log("Response from /api/appointments/me:", resp.status, resp?.data);
+
+      const isObject = typeof resp.data === "object" && resp.data !== null;
+      if (!isObject) {
+        throw new Error("Unexpected non-JSON response from appointments endpoint");
+      }
 
       const fetched =
-        resp?.data?.appointments ?? resp?.data?.data ?? resp?.data ?? [];
+        resp.data?.appointments ?? resp.data?.data ?? resp.data ?? [];
       const arr = Array.isArray(fetched) ? fetched : [];
 
       const doctors = arr.filter((a) => {
@@ -222,14 +209,19 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
           console.log("Attempting debug request with ?createdBy=", user.id);
           const debugResp = await API.get(
             `/api/appointments/me?createdBy=${user.id}`,
-            { headers },
+            { headers, validateStatus: null },
           );
-          console.log("Debug fallback response:", debugResp?.data);
+          console.log("Debug fallback response:", debugResp.status, debugResp?.data);
+
+          const isDebugObject = typeof debugResp.data === "object" && debugResp.data !== null;
+          if (!isDebugObject) {
+            throw new Error("Unexpected non-JSON response from debug appointments endpoint");
+          }
 
           const fetched =
-            debugResp?.data?.appointments ??
-            debugResp?.data?.data ??
-            debugResp?.data ??
+            debugResp.data?.appointments ??
+            debugResp.data?.data ??
+            debugResp.data ??
             [];
           const arr = Array.isArray(fetched) ? fetched : [];
           const doctors = arr.filter(
@@ -276,15 +268,20 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
     } catch (err) {
       console.error("Failed to get Clerk token (frontend): err", err);
     }
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    console.log("Outgoing headers for /api/service-appointments/me:", headers);
-
+    const headers = token
+      ? { Authorization: `Bearer ${token}`, Accept: "application/json" }
+      : { Accept: "application/json" };
     try {
-      const resp = await API.get("/api/service-appointments/me", { headers });
-      console.log("Response from /api/service-appointments/me:", resp?.data);
+      const resp = await API.get("/api/service-appointments/me", { headers, validateStatus: null });
+      console.log("Response from /api/service-appointments/me:", resp.status, resp?.data);
+
+      const isObject = typeof resp.data === "object" && resp.data !== null;
+      if (!isObject) {
+        throw new Error("Unexpected non-JSON response from service appointments endpoint");
+      }
 
       const fetched =
-        resp?.data?.appointments ?? resp?.data?.data ?? resp?.data ?? [];
+        resp.data?.appointments ?? resp.data?.data ?? resp.data ?? [];
       const arr = Array.isArray(fetched) ? fetched : [];
       console.log(arr);
 
@@ -301,14 +298,19 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
           console.log("Attempting debug request with ?createdBy=", user.id);
           const debugResp = await API.get(
             `/api/service-appointments/me?createdBy=${user.id}`,
-            { headers },
+            { headers, validateStatus: null },
           );
-          console.log("Debug fallback response (services):", debugResp?.data);
+          console.log("Debug fallback response (services):", debugResp.status, debugResp?.data);
+
+          const isDebugObject = typeof debugResp.data === "object" && debugResp.data !== null;
+          if (!isDebugObject) {
+            throw new Error("Unexpected non-JSON response from debug service appointments endpoint");
+          }
 
           const fetched =
-            debugResp?.data?.appointments ??
-            debugResp?.data?.data ??
-            debugResp?.data ??
+            debugResp.data?.appointments ??
+            debugResp.data?.data ??
+            debugResp.data ??
             [];
           const arr = Array.isArray(fetched) ? fetched : [];
           setServiceAppts(arr);
@@ -406,10 +408,7 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
           }
         }
 
-        const payment = (a.payment && a.payment.method) || "Cash";
-        const status =
-          a.status ||
-          (a.payment && a.payment.status === "Paid" ? "Confirmed" : "Pending");
+        const status = a.status || "Pending";
         const rescheduledTo = normalizeRescheduled(
           a.rescheduledTo || {
             date: a.rescheduledDate,
@@ -426,7 +425,6 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
           experience,
           date,
           time,
-          payment,
           status,
           rescheduledTo,
         };
@@ -460,10 +458,7 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
           }
         }
 
-        const payment = (s.payment && s.payment.method) || "Cash";
-        const status =
-          s.status ||
-          (s.payment && s.payment.status === "Paid" ? "Confirmed" : "Pending");
+        const status = s.status || "Pending";
 
         const rescheduledTo = normalizeRescheduled(s.rescheduledTo || null);
 
@@ -475,7 +470,6 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
           price,
           date,
           time,
-          payment,
           status,
           rescheduledTo,
         };
@@ -520,7 +514,6 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
                     </p>
 
                     <div className={cardStyles.badgesContainer}>
-                        <PaymentBadge payment={item.payment}/>
                         <StatusBadge itemStatus={item.status} />
                     </div>
 
@@ -572,7 +565,6 @@ const { isLoaded, isSignedIn, getToken } = useAuth();
               </p>
 
               <div className={cardStyles.badgesContainer}>
-                <PaymentBadge payment={srv.payment} />
                 <StatusBadge itemStatus={srv.status} />
               </div>
 

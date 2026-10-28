@@ -107,7 +107,6 @@ export default function DoctorDetail() {
     email: "",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Clerk hooks
@@ -280,7 +279,6 @@ export default function DoctorDetail() {
       time: selectedSlot,
       fee: fee,
       fees: fee,
-      paymentMethod: paymentMethod || "Online",
       email: formData.email || undefined,
     };
 
@@ -294,36 +292,32 @@ export default function DoctorDetail() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
 
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
+      const contentType = res.headers.get("content-type") || "";
+      const isJson = contentType.includes("application/json");
+      const body = isJson ? await res.json().catch(() => null) : null;
+
+      if (!res.ok || !isJson || body == null || body.success === false) {
         const message =
-          body?.message || body?.error || `Booking failed (${res.status})`;
+          (body && (body.message || body.error)) ||
+          `Booking failed (${res.status})`;
         toast.error(message, { position: "top-center" });
         setIsSubmitting(false);
         return;
       }
 
-      // If checkoutUrl is returned -> redirect to Stripe Checkout
-      if (body.checkoutUrl) {
-        // redirect user to Stripe Checkout
-        window.location.href = body.checkoutUrl;
-        return;
-      }
-
-      // Booking created (Cash or free)
       toast.success("Booking successful", {
         position: "top-center",
         autoClose: 1500,
       });
 
-      // navigate to appointments list (you can change this path)
       setTimeout(() => {
-        window.location.href = "/appointments?payment_status=Pending";
+        window.location.href = "/appointments";
       }, 700);
     } catch (err) {
       console.error("Booking error:", err);
@@ -732,49 +726,6 @@ export default function DoctorDetail() {
                       <span className={doctorDetailStyles.feeDisplay}>
                         ₹{fee}
                       </span>
-                    </div>
-                  </div>
-
-                  {/* PAYMENT METHOD SELECTOR */}
-                  <div className={doctorDetailStyles.paymentContainer}>
-                    <label className={doctorDetailStyles.paymentLabel}>
-                      Payment:
-                    </label>
-                    <div className={doctorDetailStyles.paymentOptions}>
-                      <label
-                        className={`${doctorDetailStyles.paymentOption} ${
-                          paymentMethod === "Cash"
-                            ? doctorDetailStyles.paymentOptionSelected
-                            : doctorDetailStyles.paymentOptionUnselected
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="Cash"
-                          checked={paymentMethod === "Cash"}
-                          onChange={() => setPaymentMethod("Cash")}
-                          className={doctorDetailStyles.paymentRadio}
-                        />
-                        Cash
-                      </label>
-                      <label
-                        className={`${doctorDetailStyles.paymentOption} ${
-                          paymentMethod === "Online"
-                            ? doctorDetailStyles.paymentOptionSelected
-                            : doctorDetailStyles.paymentOptionUnselected
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="Online"
-                          checked={paymentMethod === "Online"}
-                          onChange={() => setPaymentMethod("Online")}
-                          className={doctorDetailStyles.paymentRadio}
-                        />
-                        Online
-                      </label>
                     </div>
                   </div>
 

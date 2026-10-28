@@ -87,53 +87,12 @@ patientName: {
     ampm: { type: String, enum: ["AM", "PM"] },
   },
 
-  payment: {
-    method: {
-      type: String,
-        enum: ["Cash", "Online"],
-        default: "Cash",
-      },
-
-    status: {
-      type: String,
-     enum: ["Pending", "Paid", "Failed", "Refunded"],
-        default: "Pending",
-      },
-
-    amount: {
-      type: Number,
-        required: true,
-      },
-
-    providerId: {
-      type: String,
-        default: "",
-      },
-
-    paidAt: {
-      type: Date,
-        default: null,
-      },
-
-    sessionId: {
-      type: String,
-        default: "",
-        index: true,
-      },
-
-    meta: {
-      type: mongoose.Schema.Types.Mixed,
-        default: { },
-    },
-  },
-
 }, {
     timestamps: true
 });
 
 serviceAppointmentSchema.index({date:1, status: 1});
 serviceAppointmentSchema.index({serviceId: 1});
-serviceAppointmentSchema.index({"payment.sessionId": 1});
 
 const ServiceAppointment = mongoose.models.ServiceAppointment ||
 mongoose.model("ServiceAppointment", serviceAppointmentSchema);

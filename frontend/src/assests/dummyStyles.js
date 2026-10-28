@@ -54,11 +54,6 @@ export const cardStyles = {
 };
 
 export const badgeStyles = {
-  paymentBadge: {
-    online: "px-3 py-1 rounded-full font-semibold text-xs bg-green-100 text-green-700 border border-green-300 flex items-center gap-1",
-    cash: "px-3 py-1 rounded-full font-semibold text-xs bg-yellow-100 text-yellow-700 border border-yellow-300 flex items-center gap-1"
-  },
-  
   statusBadge: {
     completed: "px-3 py-1 rounded-full font-semibold text-xs bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1",
     confirmed: "px-3 py-1 rounded-full font-semibold text-xs bg-green-100 text-green-700 border border-green-200 flex items-center gap-1",
@@ -919,13 +914,6 @@ export const serviceDetailStyles = {
   invalidInput: "px-4 py-3 rounded-full border border-rose-500 focus:ring-2 focus:ring-emerald-300 w-full",
   emailInput: "px-4 py-3 rounded-full border border-emerald-200 focus:ring-2 focus:ring-emerald-300 w-full sm:col-span-2",
   
-  // Payment method
-  paymentLabel: "font-semibold text-emerald-800 block mb-2",
-  paymentOptions: "inline-flex gap-2",
-  paymentOption: (isSelected) => 
-    `px-3 py-1 rounded-full cursor-pointer border ${isSelected ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-emerald-700 border-emerald-100"}`,
-  paymentInput: "hidden",
-  
   // Date selection
   dateSection: "mt-4",
   dateTitle: "text-xl font-semibold text-emerald-900 mb-2",
@@ -1110,15 +1098,6 @@ export const doctorDetailStyles = {
   summaryLabel: "text-md text-gray-600",
   summaryValue: "font-semibold text-emerald-700 text-sm sm:text-base",
   feeDisplay: "font-bold text-rose-600",
-  
-  // Payment method
-  paymentContainer: "mb-3 flex items-center gap-3",
-  paymentLabel: "text-sm font-medium text-emerald-700",
-  paymentOptions: "inline-flex gap-2",
-  paymentOption: "px-3 py-1 rounded-full cursor-pointer border",
-  paymentOptionSelected: "bg-emerald-600 text-white border-emerald-600",
-  paymentOptionUnselected: "bg-white text-emerald-700 border-emerald-100",
-  paymentRadio: "hidden",
   
   // Booking button
   bookingButton: "w-full py-3 sm:py-4 px-4 rounded-full font-semibold text-sm cursor-pointer transition-all",

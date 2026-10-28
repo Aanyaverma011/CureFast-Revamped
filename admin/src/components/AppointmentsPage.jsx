@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { pageStyles, statusClasses, keyframesStyles } from '../assets/dummyStyles';
-import { Calendar, Search } from 'lucide-react';
+import { BadgeIndianRupee, Calendar, Search } from 'lucide-react';
 
 const API_BASE = "http://localhost:4000";
 
@@ -82,7 +82,7 @@ useEffect(() => {
               date: a.date || (a.slot && a.slot.date) || "",
               time: a.time || (a.slot && a.slot.time) || "00:00 AM",
             },
-            status: a.status || (a.payment && a.payment.status) || "Pending",
+            status: a.status || "Pending",
             raw: a, // keep original in case we need it
           };
         });
@@ -209,7 +209,7 @@ useEffect(() => {
               date: a.date || (a.slot && a.slot.date) || "",
               time: a.time || (a.slot && a.slot.time) || "00:00 AM",
             },
-            status: a.status || (a.payment && a.payment.status) || "Pending",
+            status: a.status || "Pending",
             raw: a,
           }));
           setAppointments(items);

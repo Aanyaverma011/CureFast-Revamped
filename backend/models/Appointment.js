@@ -40,24 +40,6 @@ createdBy: {type: String, default: null, index: true},
       time: { type: String },
     },
 
-    payment: {
-      method: {
-        type: String,
-        enum: ["Cash", "Online"],
-        default: "Cash",
-      },
-      status: {
-        type: String,
-        enum: ["Pending", "Paid", "Failed", "Refunded"],
-        default: "Pending",
-      },
-      amount: { type: Number, default: 0 },
-      providerId: { type: String, default: "" },
-      meta: { type: mongoose.Schema.Types.Mixed, default: {} },
-    },
-    sessionId: { type: String, default: null, index: true },
-    paidAt: { type: Date, default: null }, 
-
 }, {
     timestamps: true
 });

@@ -94,7 +94,7 @@ function normalizeAppointment(a) {
     a.specialization ||
     "";
   const mobile = a.mobile || a.phone || "";
-  const fee = Number(a.fees ?? a.fee ?? a.payment?.amount ?? 0) || 0;
+  const fee = Number(a.fees ?? a.fee ?? 0) || 0;
   const date = a.date || (a.slot && a.slot.date) || "";
   const rawTime =
     a.time ||
@@ -107,7 +107,7 @@ function normalizeAppointment(a) {
       : "");
   const time = to24HourFromMaybe12(rawTime);
   const status = backendToFrontendStatus(
-    a.status || a.payment?.status || "pending",
+    a.status || "pending",
   );
   return {
     id,

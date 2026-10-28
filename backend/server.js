@@ -13,29 +13,47 @@ const app = express();
 const port = 4000;
 
 const allowedOrigins = [
-"http://localhost:5173",
-"http://localhost:5174"
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:4173",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:4173",
+  "http://127.0.0.1:3000",
 ];
 
 //middlewares
-app.use(cors(
-    {
-        origin: function (origin, callback){
-            if(!origin) return callback(null, true);
-            const allowedOrigins = [
-      "http://localhost:5173",
-      "http://localhost:5174"
-    ];
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      try {
+        const url = new URL(origin);
+        if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+          return callback(null, true);
+        }
+      } catch (e) {
+        // ignore malformed origin
+      }
 
-            if(allowedOrigins.includes(origin)){
-                return callback(null, true)
-            }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-            return callback(new Error("Not allowed by CORS"));
-        },
-        credentials: true,
-          }
-));
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    optionsSuccessStatus: 200,
+  }),
+);
+
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.originalUrl} accept=${req.headers.accept || "-"} auth=${req.headers.authorization ? "yes" : "no"}`);
+  next();
+});
 
 app.use(clerkMiddleware());
 app.use(express.json({limit: "20mb"}));

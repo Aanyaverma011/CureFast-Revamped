@@ -1,15 +1,20 @@
 import express from "express";
-import { clerkMiddleware, requireAuth } from '@clerk/express';
-import { cancelAppointment, confirmPayment, createAppointment, getAppointmentByDoctor, getAppointments, getAppointmentsByPatient, getRegisteredUserCount, getStats, updateAppointment } from '../controllers/appointmentController.js';
+import { cancelAppointment, createAppointment, getAppointmentByDoctor, getAppointments, getAppointmentsByPatient, getRegisteredUserCount, getStats, updateAppointment } from '../controllers/appointmentController.js';
 
 const appointmentRouter = express.Router();
 
 appointmentRouter.get("/", getAppointments);
-appointmentRouter.get("/confirm", confirmPayment);
 appointmentRouter.get("/stats/summary", getStats);
 
-appointmentRouter.post('/', clerkMiddleware(), requireAuth(), createAppointment);
-appointmentRouter.get('/me', clerkMiddleware(), requireAuth(), getAppointmentsByPatient);
+appointmentRouter.post(
+  "/",
+  createAppointment
+);
+
+appointmentRouter.get(
+  "/me",
+  getAppointmentsByPatient
+);
 
 appointmentRouter.get("/doctor/:doctorId", getAppointmentByDoctor);
 

@@ -15,7 +15,7 @@ CureFast is a full-stack Hospital Management System developed using the MERN sta
 - Responsive UI for all devices
 - JWT-protected REST APIs
 - Cloudinary image upload integration
-- Stripe payment integration support
+- Appointment booking without online payment
 
 ---
 
@@ -40,7 +40,6 @@ CureFast is a full-stack Hospital Management System developed using the MERN sta
 - Clerk
 - JWT
 - Cloudinary
-- Stripe
 
 ---
 
@@ -125,7 +124,6 @@ Add screenshots of:
 ## Future Enhancements
 
 - AI-powered doctor recommendation
-- Online payment system
 - Email/SMS notifications
 - Medical history management
 - Video consultation integration

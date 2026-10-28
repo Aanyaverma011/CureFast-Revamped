@@ -11,9 +11,9 @@ const doctorRouter = express.Router();
 
 doctorRouter.get("/", getDoctors);
 doctorRouter.post('/login', doctorLogin);
+doctorRouter.post("/", upload.single("image"), createDoctor);
 
 doctorRouter.get("/:id", getDoctorById);
-doctorRouter.post("/", upload.single("image"), createDoctor);
 
 
 doctorRouter.put("/:id", doctorAuth, upload.single("image"), updateDoctor);

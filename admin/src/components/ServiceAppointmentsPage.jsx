@@ -308,13 +308,13 @@ const [appointments, setAppointments] = useState([]);
               a.service ||
               a.raw?.serviceName ||
               (a.notes || "").slice(0, 40),
-            fees: a.fees ?? a.fee ?? a.payment?.amount ?? 0,
+            fees: a.fees ?? a.fee ?? 0,
             date:
               a.date || (a.slot && a.slot.date) || a.rescheduledTo?.date || "",
             hour: parsed.hour,
             minute: parsed.minute,
             ampm: parsed.ampm,
-            status: a.status || (a.payment && a.payment.status) || "Pending",
+            status: a.status || "Pending",
             raw: a,
           };
         })
@@ -660,7 +660,7 @@ const [appointments, setAppointments] = useState([]);
               </div>
           ) : (
             displayList.map((a) => {
-              const isLoaded = a.status==="Completed" || a.status === "Canceled";
+              const isLocked = a.status === "Completed" || a.status === "Canceled";
             return (
               <article key={a.id} className={serviceAppointmentsStyles.article}>
                 <div className={serviceAppointmentsStyles.cardInner}>
