@@ -112,12 +112,23 @@ JWT_SECRET=your_secret
 
 ## Screenshots
 
-Add screenshots of:
-- Home Page
-- Doctor Listing
-- Appointment Booking
-- Admin Dashboard
-- Services Section
+
+<img width="1470" height="956" alt="Screenshot 2026-10-28 at 3 19 31 PM" src="https://github.com/user-attachments/assets/55a51fa5-f517-4d96-adf2-de7502e8fffb" />
+
+<img width="1470" height="956" alt="Screenshot 2026-10-28 at 3 19 12 PM" src="https://github.com/user-attachments/assets/beb47017-8d1b-4473-98a6-96ce907f1ba3" />
+
+<img width="1470" height="956" alt="Screenshot 2026-10-28 at 3 19 07 PM" src="https://github.com/user-attachments/assets/bc793388-7abc-4858-8d11-0b0b93a5e57a" />
+
+---
+
+## Project Presentation
+
+Explore the project presentation for an overview of
+CureFast's architecture, modules, database design,
+and application screenshots.
+
+[CureFast_Presentation.pptx](https://github.com/user-attachments/files/34073412/CureFast_Presentation.pptx)
+
 
 ---
 
@@ -127,7 +138,7 @@ Add screenshots of:
 - Email/SMS notifications
 - Medical history management
 - Video consultation integration
-
+- payment system
 ---
 
 ## Author
