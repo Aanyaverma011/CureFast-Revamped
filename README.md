@@ -1,6 +1,6 @@
 # CureFast
 
-CureFast is a full-stack Hospital Management System developed using the MERN stack with Clerk authentication and responsive Tailwind CSS UI. The platform streamlines doctor management, appointment booking, healthcare service management, and real-time hospital analytics through separate patient and admin portals.
+CureFast is a full-stack Hospital Management System built using the MERN stack, Clerk authentication, and Tailwind CSS. It streamlines doctor management, appointment booking, and healthcare service management through dedicated patient and admin portals, featuring real-time hospital analytics and an AI-powered health information chatbot for symptom-related guidance and medical warning signs.
 
 ---
 
