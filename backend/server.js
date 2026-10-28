@@ -7,6 +7,7 @@ import doctorRouter from './routes/doctorRouter.js';
 import serviceRouter from './routes/serviceRouter.js';
 import appointmentRouter from './routes/appointmentRouter.js';
 import serviceAppointmentRouter from './routes/serviceAppointmentRouter.js';
+import chatbotRouter from './routes/chatbotRouter.js';
 
 
 const app = express();
@@ -51,11 +52,13 @@ app.use(
 );
 
 app.use((req, res, next) => {
+  if (req.path === "/api/chat") return next();
   console.log(`[REQ] ${req.method} ${req.originalUrl} accept=${req.headers.accept || "-"} auth=${req.headers.authorization ? "yes" : "no"}`);
   next();
 });
 
 app.use(clerkMiddleware());
+app.use("/api/chat", express.json({ limit: "32kb" }));
 app.use(express.json({limit: "20mb"}));
 app.use(express.urlencoded({limit: "20mb", extended: true}));
 
@@ -69,6 +72,7 @@ app.use("/api/doctors", doctorRouter);
 app.use("/api/services", serviceRouter);
 app.use("/api/appointments", appointmentRouter);
 app.use("/api/service-appointments", serviceAppointmentRouter);
+app.use("/api/chat", chatbotRouter);
 
 app.get('/', (req, res) => {
 res.send("API WORKING");
